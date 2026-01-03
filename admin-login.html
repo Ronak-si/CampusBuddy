@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Authentication | CampusBuddy AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0f172a] flex items-center justify-center min-h-screen p-6">
+    <div class="max-w-md w-full">
+        <div class="text-center mb-10">
+            <div class="inline-block p-4 rounded-2xl bg-blue-500/10 mb-4">
+                <span class="text-4xl">🛡️</span>
+            </div>
+            <h2 class="text-3xl font-black text-white tracking-tight">Admin Portal</h2>
+            <p class="text-slate-400 mt-2 font-medium">Internal Maintenance Management</p>
+        </div>
+
+        <div class="bg-slate-800/50 backdrop-blur-xl p-10 rounded-[2.5rem] border border-slate-700 shadow-2xl">
+            <form id="adminLoginForm" class="space-y-5">
+                <div>
+                    <label class="block text-slate-400 text-xs font-bold uppercase tracking-widest mb-2 ml-1">Staff Credentials</label>
+                    <input type="email" id="adminEmail" required 
+                        class="w-full bg-slate-900/50 text-white px-5 py-4 rounded-2xl border border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
+                        placeholder="admin@university.edu">
+                </div>
+                <div>
+                    <input type="password" id="adminPass" required 
+                        class="w-full bg-slate-900/50 text-white px-5 py-4 rounded-2xl border border-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
+                        placeholder="••••••••">
+                </div>
+                <button type="submit" id="loginBtn" 
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white py-5 rounded-2xl font-black shadow-lg shadow-blue-900/20 transition-all active:scale-95">
+                    Authorize & Enter
+                </button>
+            </form>
+        </div>
+        
+        <div class="text-center mt-8">
+            <a href="index.html" class="text-slate-500 hover:text-slate-300 text-sm font-bold transition-colors">← Back to Public Site</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = { /* PASTE_YOUR_FIREBASE_CONFIG_HERE */ };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        document.getElementById('adminLoginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            btn.innerText = "Verifying...";
+            
+            try {
+                await signInWithEmailAndPassword(auth, 
+                    document.getElementById('adminEmail').value, 
+                    document.getElementById('adminPass').value
+                );
+                // On success, go to the actual dashboard
+                window.location.href = "admin-dashboard.html";
+            } catch (err) {
+                alert("Unauthorized: " + err.message);
+                btn.innerText = "Authorize & Enter";
+            }
+        };
+    </script>
+</body>
+</html>
