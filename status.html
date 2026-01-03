@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track My Reports | CampusBuddy AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for a cleaner SDE look */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+
+    <nav class="p-5 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm flex justify-between items-center px-8">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">🚀</span>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                CampusBuddy AI
+            </h1>
+        </div>
+        <div class="flex items-center gap-6">
+            <a href="report.html" class="text-sm font-bold text-slate-600 hover:text-blue-600 transition">Back to Report</a>
+            <a href="report.html" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition active:scale-95">
+                + File New Issue
+            </a>
+        </div>
+    </nav>
+
+    <div class="max-w-5xl mx-auto p-6 mt-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+            <div>
+                <h2 class="text-4xl font-extrabold tracking-tight text-slate-900">Live Status Tracker</h2>
+                <p class="text-slate-500 mt-2 text-lg">Real-time updates on your campus maintenance requests.</p>
+            </div>
+            <div id="reportCount" class="inline-flex items-center px-4 py-2 rounded-2xl bg-white border border-slate-200 shadow-sm text-sm font-bold text-blue-600">
+                0 Total Reports
+            </div>
+        </div>
+
+        <div id="reportsList" class="grid gap-8">
+            <div id="loading" class="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                <div class="animate-spin w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
+                <p class="text-slate-500 font-medium animate-pulse">Syncing with Campus Database...</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-12 text-slate-400 text-xs font-medium uppercase tracking-widest">
+        End of Reports • CampusBuddy AI 2025
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // 1. Firebase Config (Keep this consistent across all files)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const reportsList = document.getElementById('reportsList');
+        const reportCount = document.getElementById('reportCount');
+
+        // 2. Real-Time Data Fetching (Backend Integration)
+        const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
+
+        // onSnapshot is the "Secret Sauce" - it updates the UI automatically when the DB changes
+        onSnapshot(q, (snapshot) => {
+            reportsList.innerHTML = ""; 
+            reportCount.innerText = `${snapshot.size} Total Reports`;
+
+            if (snapshot.empty) {
+                reportsList.innerHTML = `
+                    <div class="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                        <p class="text-slate-400 font-medium text-lg">No reports found under your profile.</p>
+                        <a href="report.html" class="text-blue-600 font-bold hover:underline mt-2 inline-block">Report your first issue here →</a>
+                    </div>`;
+                return;
+            }
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const ticketId = doc.id.substring(0, 8).toUpperCase();
+                const reportDate = new Date(data.timestamp).toLocaleDateString('en-GB', {
+                    day: 'numeric', month: 'short', year: 'numeric'
+                });
+
+                // Status UI Logic
+                let statusBadge = "bg-slate-100 text-slate-600";
+                let dotColor = "bg-slate-400";
+                
+                if (data.status === "Pending") {
+                    statusBadge = "bg-amber-100 text-amber-700";
+                    dotColor = "bg-amber-500";
+                } else if (data.status === "In Progress") {
+                    statusBadge = "bg-blue-100 text-blue-700";
+                    dotColor = "bg-blue-500";
+                } else if (data.status === "Resolved") {
+                    statusBadge = "bg-emerald-100 text-emerald-700";
+                    dotColor = "bg-emerald-500";
+                }
+
+                // Render dynamic card
+                reportsList.innerHTML += `
+                    <div class="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:border-blue-200 transition-all duration-300">
+                        <div class="flex flex-col md:flex-row">
+                            <div class="md:w-64 h-52 md:h-auto overflow-hidden bg-slate-100 relative">
+                                <img src="${data.imageUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Incident Image">
+                                <div class="absolute top-3 left-3 bg-black/50 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-md font-bold tracking-tighter">
+                                    IMG_REF_${ticketId}
+                                </div>
+                            </div>
+
+                            <div class="p-8 flex-1">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="w-2 h-2 rounded-full ${dotColor} animate-pulse"></span>
+                                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Ticket #${ticketId}</span>
+                                        </div>
+                                        <h3 class="text-xl font-bold text-slate-800 leading-tight">
+                                            ${data.description.length > 80 ? data.description.substring(0, 80) + '...' : data.description}
+                                        </h3>
+                                    </div>
+                                    <span class="${statusBadge} px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider">
+                                        ${data.status}
+                                    </span>
+                                </div>
+
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-50">
+                                    <div>
+                                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Category</p>
+                                        <p class="text-sm font-semibold text-slate-700">${data.category || 'General'}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">AI Priority</p>
+                                        <p class="text-sm font-semibold ${data.priority === 'High' ? 'text-red-500' : 'text-slate-700'}">${data.priority || 'Normal'}</p>
+                                    </div>
+                                    <div class="col-span-2 text-right">
+                                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Submission Date</p>
+                                        <p class="text-sm font-semibold text-slate-700">${reportDate}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>
